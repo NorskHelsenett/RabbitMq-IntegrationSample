@@ -1,0 +1,5 @@
+C:\dev\RabbitMq-IntegrationSample\RabbitMq_integration\obj\Debug\net6.0\RabbitMq_integration.csproj.AssemblyReference.cache
+C:\dev\RabbitMq-IntegrationSample\RabbitMq_integration\obj\Debug\net6.0\RabbitMq_integration.GeneratedMSBuildEditorConfig.editorconfig
+C:\dev\RabbitMq-IntegrationSample\RabbitMq_integration\obj\Debug\net6.0\RabbitMq_integration.AssemblyInfoInputs.cache
+C:\dev\RabbitMq-IntegrationSample\RabbitMq_integration\obj\Debug\net6.0\RabbitMq_integration.AssemblyInfo.cs
+C:\dev\RabbitMq-IntegrationSample\RabbitMq_integration\obj\Debug\net6.0\RabbitMq_integration.csproj.CoreCompileInputs.cache
