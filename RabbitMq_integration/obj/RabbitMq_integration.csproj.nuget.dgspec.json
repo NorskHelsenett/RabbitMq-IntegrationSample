@@ -48,21 +48,17 @@
               "target": "Package",
               "version": "[2.2.0, )"
             },
-            "Microsoft.Extensions.Configuration": {
-              "target": "Package",
-              "version": "[7.0.0-rc.2.22472.3, )"
-            },
-            "Microsoft.Extensions.Diagnostics.HealthChecks": {
-              "target": "Package",
-              "version": "[7.0.0-rc.2.22476.2, )"
-            },
             "Microsoft.Extensions.Hosting": {
               "target": "Package",
-              "version": "[7.0.0-rc.2.22472.3, )"
+              "version": "[7.0.0, )"
             },
             "RabbitMQ.Client": {
               "target": "Package",
               "version": "[6.4.0, )"
+            },
+            "RabbitMQ.Stream.Client": {
+              "target": "Package",
+              "version": "[1.0.0-rc.8, )"
             },
             "System.ServiceModel.Duplex": {
               "target": "Package",

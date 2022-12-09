@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMq_integration", "RabbitMq_integration\RabbitMq_integration.csproj", "{7D1BDA30-3C12-4C7D-AB9E-E45275E8A2C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitialPopulation", "InitialPopulation\InitialPopulation.csproj", "{436E7403-C095-4B38-B190-B26BDA0BBABD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{7D1BDA30-3C12-4C7D-AB9E-E45275E8A2C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D1BDA30-3C12-4C7D-AB9E-E45275E8A2C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D1BDA30-3C12-4C7D-AB9E-E45275E8A2C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{436E7403-C095-4B38-B190-B26BDA0BBABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{436E7403-C095-4B38-B190-B26BDA0BBABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{436E7403-C095-4B38-B190-B26BDA0BBABD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{436E7403-C095-4B38-B190-B26BDA0BBABD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
