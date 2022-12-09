@@ -39,8 +39,8 @@ class Program
         binding.SendTimeout = new TimeSpan(0, 10, 0);
         
         var client = new ARExportServiceClient(binding, "https://ws-web.test.nhn.no/v1/ARExport");
-        client.ClientCredentials.UserName.UserName = "nhn-vetlea";
-        client.ClientCredentials.UserName.Password = "PZrVdr5GZ3q5644";
+        client.ClientCredentials.UserName.UserName = "";
+        client.ClientCredentials.UserName.Password = "";
         return client;
     }
 }

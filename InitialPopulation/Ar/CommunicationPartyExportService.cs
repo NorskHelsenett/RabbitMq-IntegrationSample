@@ -38,9 +38,9 @@ public class CommunicationPartyExportService
                     using (ms = new MemoryStream())
                     {
                         var res = _arExportService.GetAllCommunicationPartiesXmlAsync();
+                        var dcs = new DataContractSerializer(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
                         using (var xmlWriter = XmlWriter.Create(ms, XmlWriterSettings))
                         {
-                            var dcs = new DataContractSerializer(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
                             dcs.WriteObject(xmlWriter, res.Result);
                         }
                         _cachedData = ms.ToArray();
