@@ -1,5 +1,4 @@
 ﻿using System.Runtime.Serialization;
-using System.Text;
 using System.Xml;
 using InitialPopulation.ArExportService;
 
@@ -9,58 +8,25 @@ public class CommunicationPartyExportService
 {
     private readonly IARExportService _arExportService;
     private static byte[] _cachedData;
-    private static object _syncRoot = new object();
     private static DateTime _lastLoad;
-    private static readonly TimeSpan _lifeTime = TimeSpan.FromMinutes(15);
-    private static readonly XmlWriterSettings XmlWriterSettings = new XmlWriterSettings
-    {
-        Encoding = Encoding.UTF8,
-        Indent = true,
-        OmitXmlDeclaration = false,
-        CloseOutput = false
-    };
 
     public CommunicationPartyExportService(IARExportService arExportService)
     {
         _arExportService = arExportService;
     }
 
-    public Stream GetAllCommunicationPartiesXml()
+    public List<InitialPopulation.CommunicationParty.CommunicationParty>? GetAllCommunicationPartiesXml()
     {
         try
         {
-            MemoryStream ms;
-
-            lock (_syncRoot)
+            var res = _arExportService.GetAllCommunicationPartiesXmlAsync().GetAwaiter().GetResult();
+            var dcs = new DataContractSerializer(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
+            List<InitialPopulation.CommunicationParty.CommunicationParty> result;
+            using (var xmlReader = XmlReader.Create(res))
             {
-                if (_cachedData == null || _lastLoad + _lifeTime < DateTime.Now)
-                {
-                    using (ms = new MemoryStream())
-                    {
-                        var res = _arExportService.GetAllCommunicationPartiesXmlAsync();
-                        var dcs = new DataContractSerializer(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
-                        using (var xmlWriter = XmlWriter.Create(ms, XmlWriterSettings))
-                        {
-                            dcs.WriteObject(xmlWriter, res.Result);
-                        }
-                        _cachedData = ms.ToArray();
-                        _lastLoad = DateTime.Now;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Cache hit.");
-                }
-
-                if (_cachedData == null)
-                {
-                    throw new InvalidOperationException("Error loading data");
-                }
-
-                ms = new MemoryStream(_cachedData);
+                result = dcs.ReadObject(xmlReader) as List<InitialPopulation.CommunicationParty.CommunicationParty>;
             }
-
-            return ms;
+            return result; 
         }
         catch (Exception ex)
         {

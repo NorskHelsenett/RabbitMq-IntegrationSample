@@ -38,7 +38,7 @@ class Program
         binding.OpenTimeout = new TimeSpan(0, 10, 0);
         binding.SendTimeout = new TimeSpan(0, 10, 0);
         
-        var client = new ARExportServiceClient(binding, "https://ws-web.test.nhn.no/v1/ARExport");
+        var client = new ARExportServiceClient(binding, "https://ws.dev.nhn.no/v1/ARExport");
         client.ClientCredentials.UserName.UserName = "";
         client.ClientCredentials.UserName.Password = "";
         return client;
@@ -77,13 +77,10 @@ internal class InitialPopulationJob : IHostedService
     {
         try
         {
-            using (var stream = _communicationPartyExportService.GetAllCommunicationPartiesXml())
+            var data = _communicationPartyExportService.GetAllCommunicationPartiesXml();
+            foreach (var cp in data)
             {
-                var obj = ComPartyListSerializer.ReadObject(stream) as List<InitialPopulation.CommunicationParty.CommunicationParty>;
-                foreach (var cp in obj)
-                {
-                    //_healthCareSystem.CPUpdate(cp);
-                }
+                //_healthCareSystem.CPUpdate(cp);
             }
 
         }
