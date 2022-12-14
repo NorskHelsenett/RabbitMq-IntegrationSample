@@ -33,6 +33,8 @@ class Program
         binding.AllowCookies = true;
         binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
         binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Basic;
+        
+        //Setting timeout period to make sure the connection is not closed.
         binding.ReceiveTimeout = new TimeSpan(0, 10, 0);
         binding.CloseTimeout = new TimeSpan(0, 10, 0);
         binding.OpenTimeout = new TimeSpan(0, 10, 0);
@@ -77,6 +79,7 @@ internal class InitialPopulationJob : IHostedService
     {
         try
         {
+            //Fetching data
             var data = _communicationPartyExportService.GetAllCommunicationPartiesXml();
             foreach (var cp in data)
             {

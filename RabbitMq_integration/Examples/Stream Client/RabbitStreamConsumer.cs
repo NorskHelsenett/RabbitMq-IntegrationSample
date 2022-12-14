@@ -19,6 +19,10 @@ public class RabbitStreamConsumer
             Password = "guest",
             VirtualHost = "/",
             Endpoints = new List<EndPoint> {new IPEndPoint(ipAddress, 5552)},
+            Ssl = new SslOption()
+            {
+                Enabled = true
+            }
         };
         // Connect to the broker and create the system object
         // the entry point for the client.
