@@ -1,4 +1,6 @@
-﻿namespace RabbitMq_integration.HealthcareSystem;
+﻿using System;
+
+namespace RabbitMq_integration.HealthcareSystem;
 
 public interface IHealthCareSystem
 {

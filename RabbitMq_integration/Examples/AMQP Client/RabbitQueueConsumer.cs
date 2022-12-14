@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using RabbitMq_integration.Ar;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;

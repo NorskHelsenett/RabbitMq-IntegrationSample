@@ -1,4 +1,6 @@
-﻿namespace InitialPopulation.HealthcareSystem;
+﻿using System;
+
+namespace InitialPopulation.HealthcareSystem;
 
 public interface IHealthCareSystem
 {
