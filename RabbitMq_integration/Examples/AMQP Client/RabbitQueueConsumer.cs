@@ -1,18 +1,16 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using RabbitMq_integration.Ar;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace RabbitMq_integration.Consumer;
+namespace RabbitMq_integration.Examples.AMQP_Client;
 
 public class RabbitQueueConsumer : BackgroundService
 {
-    private readonly IRabbitQueueContext _queueContext;
+    private readonly string _queueName;
     private readonly ConnectionFactory _connectionFactory;
     private readonly CommunicationPartyServiceAccessor _communicationPartyServiceAccessor;
     private readonly IHealthCareSystem _healthCareSystem;
@@ -20,23 +18,23 @@ public class RabbitQueueConsumer : BackgroundService
     
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(60);
     
-    protected RabbitQueueConsumer(IRabbitMqClientSettings settings, IRabbitQueueContext queueContext, CommunicationPartyServiceAccessor communicationPartyServiceAccessor, IHealthCareSystem healthCareSystem)
+    public RabbitQueueConsumer(IOptions<RabbitMqClientSettings>  settings, IOptions<CommunicationPartyServiceAccessor> communicationPartyServiceAccessor, IOptions<IHealthCareSystem> healthCareSystem)
     {
-        _queueContext = queueContext;
-        _communicationPartyServiceAccessor = communicationPartyServiceAccessor;
-        _healthCareSystem = healthCareSystem;
+        _queueName = settings.Value.QueueName;
+        _communicationPartyServiceAccessor = communicationPartyServiceAccessor.Value;
+        _healthCareSystem = healthCareSystem.Value;
         _connectionFactory = new ConnectionFactory
         {
-            HostName = settings.EndpointHostname,
-            UserName = settings.Username,
-            Password = settings.Password,
-            Port = settings.Port,
+            HostName = settings.Value.EndpointHostname,
+            UserName = settings.Value.Username,
+            Password = settings.Value.Password,
+            Port = settings.Value.Port,
             Ssl = new SslOption
             {
-                Enabled = settings.SslEnabled,
-                ServerName = settings.EndpointHostname
+                Enabled = settings.Value.SslEnabled,
+                ServerName = settings.Value.EndpointHostname
             },
-            ClientProvidedName = settings.SubscriptionIdentifier,
+            ClientProvidedName = settings.Value.SubscriptionIdentifier,
             DispatchConsumersAsync = true,
         };
     }
@@ -62,7 +60,7 @@ public class RabbitQueueConsumer : BackgroundService
             IModel channel = _connection.CreateModel();
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (_, eventArgs) => OnReceivedAsync(eventArgs, channel);
-            var consumerTag = channel.BasicConsume(queue: _queueContext.QueueName,
+            var consumerTag = channel.BasicConsume(queue: _queueName,
                 autoAck: false,
                 consumer: consumer);
             
@@ -89,8 +87,8 @@ public class RabbitQueueConsumer : BackgroundService
         var success = true;
         try
         {
-            var routingKey = eventArgs.RoutingKey;
-            if (routingKey.Contains("AddressRegister.CommunicationPartyUpdated") || routingKey.Contains("AddressRegister.CommunicationPartyCreated"))
+            var eventName = eventArgs.BasicProperties.Headers["eventName"];
+            if (eventName.ToString()!.Contains("AddressRegister.CommunicationPartyUpdated") || eventName.ToString()!.Contains("AddressRegister.CommunicationPartyCreated"))
             {
                 var herId = Convert.ToInt32(eventArgs.BasicProperties.Headers["herId"]);
                 

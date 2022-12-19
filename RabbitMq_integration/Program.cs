@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMq_integration.Ar;
 using RabbitMq_integration.Configuration;
-using RabbitMq_integration.Consumer;
+using RabbitMq_integration.Examples.AMQP_Client;
 using RabbitMq_integration.ServiceBusManagerServiceV2;
 
 namespace RabbitMq_integration {
@@ -16,19 +16,17 @@ namespace RabbitMq_integration {
             var host = Host.CreateDefaultBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.Configure<IRabbitMqClientSettings>(hostContext.Configuration.GetSection("RabbitMqClientSettings"));
+                    services.Configure<RabbitMqClientSettings>(hostContext.Configuration.GetSection("RabbitMqClientSettings"));
                     services.Configure<ServiceBusManagerServiceSettings>(hostContext.Configuration.GetSection("ServiceBusManagerServiceSettings"));
                     
                     services.AddScoped<CommunicationPartyServiceAccessor>();
                     
                     //Setting up ServiceBusManager and getting the RabbitMq queuenames
-                    services.AddSingleton<IServiceBusManagerV2>(CreateServiceBusManagerService);
-                    services.AddHostedService<ServiceBusManagerAccessor>();
+                    //services.AddSingleton<IServiceBusManagerV2>(CreateServiceBusManagerService);
+                    //services.AddHostedService<ServiceBusManagerAccessor>();
                     
                     //RabbitMq Client setup
                     services.AddHostedService<RabbitQueueConsumer>();
-
-                    //See InitialPopulation to see how to do a initial population of your healthcaresystem
                 })
                 .Build();
             host.Run();

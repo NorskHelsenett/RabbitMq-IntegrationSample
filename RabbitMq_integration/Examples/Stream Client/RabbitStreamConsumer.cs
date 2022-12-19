@@ -1,13 +1,10 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
+﻿using System.Buffers;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
-namespace RabbitMq_integration.Stream_Client;
+namespace RabbitMq_integration.Examples.Stream_Client;
 // Work in progress - version 1.0.0 of the stream client is not released. This example is based on version 1.0.0-rc.8
 public class RabbitStreamConsumer
 {
@@ -47,7 +44,7 @@ public class RabbitStreamConsumer
             new ConsumerConfig(system, stream)
             {
                 Reference = reference,
-                // Consume the stream from the offest from the server
+                // Consume the stream from the offest recived from the server
                 OffsetSpec = new OffsetTypeOffset(trackedOffset),
                 // Receive the messages
                 MessageHandler = async (sourceStream, consumer, ctx, message) =>

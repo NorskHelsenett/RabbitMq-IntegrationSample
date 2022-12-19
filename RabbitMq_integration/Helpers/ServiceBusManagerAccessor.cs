@@ -12,7 +12,7 @@ public abstract class ServiceBusManagerAccessor : BackgroundService
 {
     private readonly IServiceBusManagerV2 _serviceBusManager;
     private readonly IRabbitQueueContext _queueContext;
-    private readonly IRabbitMqClientSettings _rabbitSettings;
+    private readonly RabbitMqClientSettings _rabbitSettings;
     private readonly TimeSpan _retryTimeout;
     
     /// <summary>
@@ -20,7 +20,7 @@ public abstract class ServiceBusManagerAccessor : BackgroundService
     /// </summary>
     protected abstract string EventNameToSubscribeTo { get; }
 
-    public ServiceBusManagerAccessor(IOptions<IRabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, IRabbitQueueContext queueContext)
+    public ServiceBusManagerAccessor(IOptions<RabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, IRabbitQueueContext queueContext)
     {
         _serviceBusManager = serviceBusManager;
         _queueContext = queueContext;
