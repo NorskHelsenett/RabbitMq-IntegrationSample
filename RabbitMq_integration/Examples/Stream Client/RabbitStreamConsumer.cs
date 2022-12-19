@@ -35,21 +35,28 @@ public class RabbitStreamConsumer
         // Name of the stream
         const string stream = "my_first_stream";
         
-        // Refeerence for the connection.
+        // Refeerence for the connection, this need to be a unique id.
         const string reference = "my_consumer";
         
-        // Create a consumer
+        //Getting the offest from the server.
         var trackedOffset = await system.QueryOffset(reference, stream);
+        int messagesConsumed = 0;
+        
+        // Create a consumer
         var consumer = await RabbitMQ.Stream.Client.Reliable.Consumer.Create(
             new ConsumerConfig(system, stream)
             {
                 Reference = reference,
-                // Consume the stream from the beginning 
-                // See also other OffsetSpec 
+                // Consume the stream from the offest from the server
                 OffsetSpec = new OffsetTypeOffset(trackedOffset),
                 // Receive the messages
                 MessageHandler = async (sourceStream, consumer, ctx, message) =>
                 {
+                    //Storing offest after each 100 message is consumed.
+                    if (++messagesConsumed % 100 == 0)
+                    {
+                        await consumer.StoreOffset(ctx.Offset);
+                    }
                     Console.WriteLine(
                         $"message: coming from {sourceStream} data: {Encoding.Default.GetString(message.Data.Contents.ToArray())} - consumed");
                     await Task.CompletedTask;
