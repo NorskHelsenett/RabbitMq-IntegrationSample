@@ -5,7 +5,7 @@ using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
 namespace RabbitMq_integration.Examples.Stream_Client;
-// Work in progress - version 1.0.0 of the stream client is not released. This example is based on version 1.0.0-rc.8
+// This example is based on version 1.0.0
 public class RabbitStreamConsumer
 {
     public static async Task Start()
