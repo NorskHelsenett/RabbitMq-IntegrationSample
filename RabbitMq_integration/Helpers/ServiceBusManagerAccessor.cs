@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.ServiceBusManagerServiceV2;
@@ -10,27 +11,22 @@ public class ServiceBusManagerAccessor : BackgroundService
 {
     private readonly IServiceBusManagerV2 _serviceBusManager;
     private readonly RabbitQueueContext _queueContext;
+    private readonly ILogger<ServiceBusManagerAccessor> _logger;
     private readonly RabbitMqClientSettings _rabbitSettings;
     private readonly TimeSpan _retryTimeout;
     
-    public ServiceBusManagerAccessor(IOptions<RabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, RabbitQueueContext queueContext)
+    public ServiceBusManagerAccessor(IOptions<RabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, RabbitQueueContext queueContext, ILogger<ServiceBusManagerAccessor> logger)
     {
         _serviceBusManager = serviceBusManager;
         _queueContext = queueContext;
+        _logger = logger;
         _rabbitSettings = rabbitSettings.Value;
         _retryTimeout = TimeSpan.FromMinutes(1);
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Console.WriteLine("Rabbit MQ integration is enabled.");
-
-        if (!_rabbitSettings.Enabled)
-        {
-            return;
-        }
-
-        while (!await TryCreateSubscriptionAsync())
+	    while (!await TryCreateSubscriptionAsync())
         {
             await Task.Delay(_retryTimeout, stoppingToken);
         }
@@ -40,13 +36,14 @@ public class ServiceBusManagerAccessor : BackgroundService
     {
         try
         {
-            _queueContext.QueueName = await EnsureRabbitMqSubscriptionExistsAsync(string.Empty, _rabbitSettings.SubscriptionIdentifier);
+	        _logger.LogInformation("Ensure subscription exists.");
+	        _queueContext.QueueName = await EnsureRabbitMqSubscriptionExistsAsync(string.Empty, _rabbitSettings.SubscriptionIdentifier);
 
             return true;
         }
         catch (Exception e)
         {
-            Console.WriteLine("Failed to set up subscription in RabbitMq.");
+            _logger.LogError(e, "Failed to set up subscription in RabbitMq.");
             return false;
         }
     }

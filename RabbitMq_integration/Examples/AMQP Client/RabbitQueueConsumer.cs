@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;
@@ -15,17 +16,19 @@ public class RabbitQueueConsumer : BackgroundService
     private readonly RabbitQueueContext _queueContext;
     private readonly ConnectionFactory _connectionFactory;
     private readonly ICommunicationPartyService _communicationPartyService;
+    private readonly ILogger _logger;
     private readonly IHealthCareSystem _healthCareSystem;
     private IConnection _connection;
     
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(60);
     
-    public RabbitQueueConsumer(IOptions<RabbitMqClientSettings> settingsOptions, RabbitQueueContext queueContext, IHealthCareSystem healthCareSystem, ICommunicationPartyService communicationPartyService)
+    public RabbitQueueConsumer(IOptions<RabbitMqClientSettings> settingsOptions, RabbitQueueContext queueContext, IHealthCareSystem healthCareSystem, ICommunicationPartyService communicationPartyService, ILogger<RabbitQueueConsumer> logger)
     {	    var settings = settingsOptions.Value;
 
 	    _queueContext = queueContext;
 	    _healthCareSystem = healthCareSystem;
         _communicationPartyService = communicationPartyService;
+        _logger = logger;
         _connectionFactory = new ConnectionFactory
         {
             HostName = settings.EndpointHostname,
@@ -76,7 +79,11 @@ public class RabbitQueueConsumer : BackgroundService
         catch (Exception e)
         {
 
-            Console.WriteLine("Failed to set up connection to RabbitMQ on host: {RabbitMqHostname}, port: {RabbitMqPort}, username: {RabbitMqUsername}, queue name: {QueueName}. Application will not receive updates from AR yet. Retry in {RetryDelay}.");
+            _logger.LogError(e, "Failed to set up connection to RabbitMQ on host: {RabbitMqHostname}, port: {RabbitMqPort}, username: {RabbitMqUsername}, queue name: {QueueName}. Application will not receive updates from AR yet.",
+	            _connectionFactory.HostName,
+	            _connectionFactory.Port,
+	            _connectionFactory.UserName,
+	            _queueContext.QueueName);
             _connection?.Close();
             _connection?.Dispose();
             _connection = null;
@@ -114,8 +121,9 @@ public class RabbitQueueConsumer : BackgroundService
         catch (Exception e)
         {
             success = false;
-            Console.WriteLine(
-                "Error processing message from Rabbit with MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Will sleep a bit, then send Nack and requeue the message.");
+            _logger.LogError(e,
+                "Error processing message from Rabbit with MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Will send Nack and requeue the message.", 
+                eventArgs.BasicProperties.MessageId, eventArgs.DeliveryTag);
         }
 
         try
@@ -131,7 +139,8 @@ public class RabbitQueueConsumer : BackgroundService
         }
         catch (Exception e)
         {
-            Console.WriteLine("Could not send {Signal} for MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Message will time out eventually.");
+			_logger.LogError("Could not send {Signal} for MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Message will time out eventually.",
+				success ? "Ack" : "Nack", eventArgs.BasicProperties.MessageId, eventArgs.DeliveryTag);
         }
     }
 
