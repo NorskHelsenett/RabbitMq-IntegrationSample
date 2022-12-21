@@ -16,9 +16,4 @@ public class ServiceBusManagerServiceSettings
     /// The password used to access the service
     /// </summary>
     public string Password { get; set; }
-
-    /// <summary>
-    /// The Proxy Url used when calling the service, if proxy is used
-    /// </summary>
-    public string ProxyUrl { get; set; }
 }

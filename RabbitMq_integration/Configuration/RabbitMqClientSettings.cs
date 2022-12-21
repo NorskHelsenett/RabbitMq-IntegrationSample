@@ -3,11 +3,6 @@
 public class RabbitMqClientSettings
 {
 	/// <summary>
-	/// Defines if a subscription should be set up, and messages should be read from the Rabbit MQ queue.
-	/// </summary>
-	public bool Enabled { get; set; }
-
-	/// <summary>
 	/// Some unique identifier for this subscription, to ensure that the same subscription is used across sessions.
 	/// </summary>
 	public string SubscriptionIdentifier { get; set; }
