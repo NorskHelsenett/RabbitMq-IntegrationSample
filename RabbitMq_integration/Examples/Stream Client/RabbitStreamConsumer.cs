@@ -32,7 +32,7 @@ public class RabbitStreamConsumer
         // Name of the stream
         const string stream = "my_first_stream";
         
-        // Refeerence for the connection, this need to be a unique id.
+        // Reference for the connection, this need to be a unique id.
         const string reference = "my_consumer";
         
         //Getting the offest from the server.

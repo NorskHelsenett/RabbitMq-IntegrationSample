@@ -1,40 +1,43 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using RabbitMq_integration.Ar;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMq_integration.CommunicationParty;
+using RabbitMq_integration.Consumer;
 
 namespace RabbitMq_integration.Examples.AMQP_Client;
 
 public class RabbitQueueConsumer : BackgroundService
 {
-    private readonly string _queueName;
+    private readonly RabbitQueueContext _queueContext;
     private readonly ConnectionFactory _connectionFactory;
-    private readonly CommunicationPartyServiceAccessor _communicationPartyServiceAccessor;
+    private readonly ICommunicationPartyService _communicationPartyService;
     private readonly IHealthCareSystem _healthCareSystem;
     private IConnection _connection;
     
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(60);
     
-    public RabbitQueueConsumer(IOptions<RabbitMqClientSettings>  settings, IOptions<CommunicationPartyServiceAccessor> communicationPartyServiceAccessor, IOptions<IHealthCareSystem> healthCareSystem)
-    {
-        _queueName = settings.Value.QueueName;
-        _communicationPartyServiceAccessor = communicationPartyServiceAccessor.Value;
-        _healthCareSystem = healthCareSystem.Value;
+    public RabbitQueueConsumer(IOptions<RabbitMqClientSettings> settingsOptions, RabbitQueueContext queueContext, IHealthCareSystem healthCareSystem, ICommunicationPartyService communicationPartyService)
+    {	    var settings = settingsOptions.Value;
+
+	    _queueContext = queueContext;
+	    _healthCareSystem = healthCareSystem;
+        _communicationPartyService = communicationPartyService;
         _connectionFactory = new ConnectionFactory
         {
-            HostName = settings.Value.EndpointHostname,
-            UserName = settings.Value.Username,
-            Password = settings.Value.Password,
-            Port = settings.Value.Port,
+            HostName = settings.EndpointHostname,
+            UserName = settings.Username,
+            Password = settings.Password,
+            Port = settings.Port,
             Ssl = new SslOption
             {
-                Enabled = settings.Value.SslEnabled,
-                ServerName = settings.Value.EndpointHostname
+                Enabled = settings.SslEnabled,
+                ServerName = settings.EndpointHostname
             },
-            ClientProvidedName = settings.Value.SubscriptionIdentifier,
+            ClientProvidedName = settings.SubscriptionIdentifier,
             DispatchConsumersAsync = true,
         };
     }
@@ -60,7 +63,7 @@ public class RabbitQueueConsumer : BackgroundService
             IModel channel = _connection.CreateModel();
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (_, eventArgs) => OnReceivedAsync(eventArgs, channel);
-            var consumerTag = channel.BasicConsume(queue: _queueName,
+            var consumerTag = channel.BasicConsume(queue: _queueContext.QueueName,
                 autoAck: false,
                 consumer: consumer);
             
@@ -90,10 +93,9 @@ public class RabbitQueueConsumer : BackgroundService
             var eventName = eventArgs.BasicProperties.Headers["eventName"];
             if (eventName.ToString()!.Contains("AddressRegister.CommunicationPartyUpdated") || eventName.ToString()!.Contains("AddressRegister.CommunicationPartyCreated"))
             {
+				// A Communication Party has been created or updated, Fetch the latest version so we can send it to the EPJ
                 var herId = Convert.ToInt32(eventArgs.BasicProperties.Headers["herId"]);
-                
-                //Get communicationparty based on herid
-                var communicationParty = await _communicationPartyServiceAccessor.GetValidCommunicationPartyAsync(herId);
+                var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(herId);
                 
                 //Filter based on a predefined list of herids. For cases where you only want to get information on specific herids
                 //Example

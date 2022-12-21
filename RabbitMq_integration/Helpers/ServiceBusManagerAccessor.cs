@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RabbitMq_integration.Configuration;
@@ -8,19 +6,14 @@ using RabbitMq_integration.ServiceBusManagerServiceV2;
 
 namespace RabbitMq_integration.Consumer;
 
-public abstract class ServiceBusManagerAccessor : BackgroundService
+public class ServiceBusManagerAccessor : BackgroundService
 {
     private readonly IServiceBusManagerV2 _serviceBusManager;
-    private readonly IRabbitQueueContext _queueContext;
+    private readonly RabbitQueueContext _queueContext;
     private readonly RabbitMqClientSettings _rabbitSettings;
     private readonly TimeSpan _retryTimeout;
     
-    /// <summary>
-    /// A single event on the AR topic to subscribe to. Leave this empty to subscribe to _all_ events on the AR topic.
-    /// </summary>
-    protected abstract string EventNameToSubscribeTo { get; }
-
-    public ServiceBusManagerAccessor(IOptions<RabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, IRabbitQueueContext queueContext)
+    public ServiceBusManagerAccessor(IOptions<RabbitMqClientSettings> rabbitSettings, IServiceBusManagerV2 serviceBusManager, RabbitQueueContext queueContext)
     {
         _serviceBusManager = serviceBusManager;
         _queueContext = queueContext;
@@ -47,7 +40,7 @@ public abstract class ServiceBusManagerAccessor : BackgroundService
     {
         try
         {
-            _queueContext.QueueName = await EnsureRabbitMqSubscriptionExistsAsync(EventNameToSubscribeTo, _rabbitSettings.SubscriptionIdentifier);
+            _queueContext.QueueName = await EnsureRabbitMqSubscriptionExistsAsync(string.Empty, _rabbitSettings.SubscriptionIdentifier);
 
             return true;
         }

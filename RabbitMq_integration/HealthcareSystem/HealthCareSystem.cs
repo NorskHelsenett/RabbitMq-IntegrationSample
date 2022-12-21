@@ -9,10 +9,8 @@ public interface IHealthCareSystem
 
 public class HealthCareSystem : IHealthCareSystem
 {
-    private readonly CommunicationParty.CommunicationParty _communicationParty;
-    public HealthCareSystem(CommunicationParty.CommunicationParty communicationParty)
+	public HealthCareSystem()
     {
-        _communicationParty = communicationParty;
     }
 
     public void CPUpdate(CommunicationParty.CommunicationParty communicationParty)
