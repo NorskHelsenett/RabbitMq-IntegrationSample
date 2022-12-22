@@ -8,6 +8,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMq_integration.CommunicationParty;
 using RabbitMq_integration.Consumer;
+using RabbitMqExtensions.RabbitMqTools;
 
 namespace RabbitMq_integration.Examples.AMQP_Client;
 
@@ -20,7 +21,7 @@ public class RabbitQueueConsumer : BackgroundService
     private readonly IHealthCareSystem _healthCareSystem;
     private IConnection _connection;
     
-    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(20);
     
     public RabbitQueueConsumer(IOptions<RabbitMqClientSettings> settingsOptions, RabbitQueueContext queueContext, IHealthCareSystem healthCareSystem, ICommunicationPartyService communicationPartyService, ILogger<RabbitQueueConsumer> logger)
     {	    var settings = settingsOptions.Value;
@@ -65,7 +66,7 @@ public class RabbitQueueConsumer : BackgroundService
         {
             _connection = _connectionFactory.CreateConnection();
             IModel channel = _connection.CreateModel();
-            var consumer = new AsyncEventingBasicConsumer(channel);
+            var consumer = new Amqp10AwareAsyncConsumer(channel);
             consumer.Received += (_, eventArgs) => OnReceivedAsync(eventArgs, channel);
             var consumerTag = channel.BasicConsume(queue: _queueContext.QueueName,
                 autoAck: false,
@@ -97,7 +98,7 @@ public class RabbitQueueConsumer : BackgroundService
         try
         {
             var eventName = eventArgs.BasicProperties.Headers["eventName"];
-            if (eventName.ToString()!.Contains("AddressRegister.CommunicationPartyUpdated") || eventName.ToString()!.Contains("AddressRegister.CommunicationPartyCreated"))
+            if (eventName.ToString()!.Contains("CommunicationPartyUpdated") || eventName.ToString()!.Contains("CommunicationPartyCreated"))
             {
 				// A Communication Party has been created or updated, Fetch the latest version so we can send it to the EPJ
                 var herId = Convert.ToInt32(eventArgs.BasicProperties.Headers["herId"]);
@@ -107,7 +108,7 @@ public class RabbitQueueConsumer : BackgroundService
                 //Example
                 /* 
                 int[] Herids = {2134566, 1231233, 5464645, 353555, 345345345};
-                if (Herids.Contains(herId))
+                if (Herids.Contains(herId)) 
                 {
                     var communicationParty = await _communicationPartyServiceAccessor.GetValidCommunicationPartyAsync(herId);
                 }
