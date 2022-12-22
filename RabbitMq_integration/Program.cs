@@ -40,12 +40,15 @@ namespace RabbitMq_integration {
             host.Run();
         }
 
-        private static ICommunicationPartyService CreateCommunicationPartyService(IServiceProvider arg)
+        private static ICommunicationPartyService CreateCommunicationPartyService(IServiceProvider serviceProvider)
         {
+	        var settings = serviceProvider.GetRequiredService<IOptions<ServiceBusManagerServiceSettings>>().Value;
+
 	        var client = new CommunicationPartyServiceClient(CommunicationPartyServiceClient.EndpointConfiguration
 		        .WSHttpBinding_ICommunicationPartyService);
-
-			// TODO: Set username/password
+	        
+	        client.ClientCredentials.UserName.UserName = settings.UserName;
+	        client.ClientCredentials.UserName.Password = settings.Password;
 
 	        return client;
         }
