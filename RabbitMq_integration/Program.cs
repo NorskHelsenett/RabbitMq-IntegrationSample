@@ -1,6 +1,8 @@
 ﻿
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using RabbitMq_integration.CommunicationParty;
 using RabbitMq_integration.Configuration;
@@ -14,7 +16,10 @@ namespace RabbitMq_integration {
     {
         static void Main(string[] args)
         {
-            var host = Host.CreateDefaultBuilder()
+	        var host = Host.CreateDefaultBuilder()
+		        .ConfigureLogging(builder =>
+			        builder.AddSimpleConsole(configure =>
+				        configure.TimestampFormat = "HH:mm:ss "))
                 .ConfigureServices((hostContext, services) =>
                 {
 					// Load config into helper classes
