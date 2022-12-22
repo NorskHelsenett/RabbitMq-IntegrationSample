@@ -50,7 +50,8 @@ public class RabbitQueueConsumer : BackgroundService
         bool success;
         do
         {
-            success = Consumer(stoppingToken);
+			_logger.LogInformation("Try to set up RabbitMq consumer...");
+            success = TrySetupConsumer(stoppingToken);
             if (!success)
             {
                 await Task.Delay(RetryDelay, stoppingToken);
@@ -58,13 +59,13 @@ public class RabbitQueueConsumer : BackgroundService
         } while (!success && !stoppingToken.IsCancellationRequested);
     }
     
-    private bool Consumer(CancellationToken cancellationToken)
+    private bool TrySetupConsumer(CancellationToken cancellationToken)
     {
         try
         {
             _connection = _connectionFactory.CreateConnection();
             IModel channel = _connection.CreateModel();
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.Received += (_, eventArgs) => OnReceivedAsync(eventArgs, channel);
             var consumerTag = channel.BasicConsume(queue: _queueContext.QueueName,
                 autoAck: false,
@@ -72,13 +73,11 @@ public class RabbitQueueConsumer : BackgroundService
             
             // Handle application shutdown gracefully:
             cancellationToken.Register(() => CloseChannel(channel, consumerTag));
-            Console.WriteLine(" Press [enter] to exit.");
-            Console.ReadLine();
             return true;
         }
         catch (Exception e)
         {
-
+			 
             _logger.LogError(e, "Failed to set up connection to RabbitMQ on host: {RabbitMqHostname}, port: {RabbitMqPort}, username: {RabbitMqUsername}, queue name: {QueueName}. Application will not receive updates from AR yet.",
 	            _connectionFactory.HostName,
 	            _connectionFactory.Port,
@@ -139,7 +138,7 @@ public class RabbitQueueConsumer : BackgroundService
         }
         catch (Exception e)
         {
-			_logger.LogError("Could not send {Signal} for MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Message will time out eventually.",
+			_logger.LogError(e, "Could not send {Signal} for MessageId: {MessageId}, Delivery tag: {DeliveryTag}. Message will time out eventually.",
 				success ? "Ack" : "Nack", eventArgs.BasicProperties.MessageId, eventArgs.DeliveryTag);
         }
     }
