@@ -4,6 +4,11 @@ How to use the events to sync updates to a healthcare system.
 
 RabbitMq is set up with a stream (maybe queues also) where you will find the events "CommunicationPartyUpdated" and "CommunicationPartyCreated".
 
+## Getting started:
+* Aquire an OrgUsr in RegisterPlattformen
+* Fill out the OrgUsr Username and Password in the appsettings.json
+* 
+
 ## RabbitMq
 ### Information about RabbitMq
 Information about RabbitMq and RabbitMq Clients in general. 

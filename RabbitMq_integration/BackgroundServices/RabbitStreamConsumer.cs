@@ -4,7 +4,7 @@ using System.Text;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 
-namespace RabbitMq_integration.Examples.Stream_Client;
+namespace RabbitMq_integration.BackgroundServices;
 // This example is based on version 1.0.0
 public class RabbitStreamConsumer
 {
@@ -12,13 +12,13 @@ public class RabbitStreamConsumer
     {
         // How to get ip from URL
         IPAddress ipAddress = (await Dns.GetHostEntryAsync("www.nhn.no")).AddressList[0];
-        
+
         var config = new StreamSystemConfig
         {
             UserName = "guest",
             Password = "guest",
             VirtualHost = "/",
-            Endpoints = new List<EndPoint> {new IPEndPoint(ipAddress, 5552)},
+            Endpoints = new List<EndPoint> { new IPEndPoint(ipAddress, 5552) },
             Ssl = new SslOption()
             {
                 Enabled = true
@@ -28,19 +28,19 @@ public class RabbitStreamConsumer
         // the entry point for the client.
         // Create it once and reuse it.
         var system = await StreamSystem.Create(config);
-        
+
         // Name of the stream
         const string stream = "my_first_stream";
-        
+
         // Reference for the connection, this need to be a unique id.
         const string reference = "my_consumer";
-        
+
         //Getting the offest from the server.
         var trackedOffset = await system.QueryOffset(reference, stream);
         int messagesConsumed = 0;
-        
+
         // Create a consumer
-        var consumer = await RabbitMQ.Stream.Client.Reliable.Consumer.Create(
+        var consumer = await Consumer.Create(
             new ConsumerConfig(system, stream)
             {
                 Reference = reference,

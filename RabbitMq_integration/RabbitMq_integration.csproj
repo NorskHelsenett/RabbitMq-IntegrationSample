@@ -22,9 +22,6 @@
     <PackageReference Include="System.ServiceModel.Security" Version="4.10.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Examples" />
-  </ItemGroup>
-  <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
