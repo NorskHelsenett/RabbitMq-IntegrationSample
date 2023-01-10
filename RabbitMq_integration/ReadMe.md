@@ -10,7 +10,8 @@ The stream client is not dependent on ServiceBuManagerV2 as it only consume stre
 
 CommunicationPartyService is used to fetch data about the communicationParty when the consumer receives an event.
 
-ArExportService, CommunicationPartyService, ServiceBusManagerServiceV2 and RabbitMq requires an OrgUsr in RegisterPlattformen.
+ArExportService, CommunicationPartyService, ServiceBusManagerServiceV2 and RabbitMq requires an OrgUsr in RegisterPlattformen.  
+WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport), [CommunicationPartyService](https://register-web.test.nhn.no/v1/AR) and [ServiceBusManagerServiceV2](https://register-web.test.nhn.no/v2/servicebusmanager)
 
 ## Initial population
 The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `initpop`), and can then be left out.
@@ -18,7 +19,6 @@ For convenience, two run profiles are included - one that runs the initial popul
 
 ## Getting started:
 * Acquire an OrgUsr in RegisterPlattformen
-* WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport), [CommunicationPartyService](https://register-web.test.nhn.no/v1/AR) and [ServiceBusManagerServiceV2](https://register-web.test.nhn.no/v2/servicebusmanager)
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
 * Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have there own unique SubscriptionIdentifier 
 * Make sure BusHostname is correct og that the BusPort is `5671` and BusSslEnabled is `true`
