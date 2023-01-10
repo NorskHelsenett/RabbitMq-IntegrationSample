@@ -3,11 +3,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMq_integration.AmqpInterop;
 using RabbitMq_integration.CommunicationParty;
 using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;
 using RabbitMq_integration.ServiceBusManagerServiceV2;
-using RabbitMqExtensions.RabbitMqTools;
 
 namespace RabbitMq_integration.BackgroundServices;
 
