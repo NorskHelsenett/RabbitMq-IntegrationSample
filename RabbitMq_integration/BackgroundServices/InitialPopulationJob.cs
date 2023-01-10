@@ -4,8 +4,6 @@ using System.Xml;
 using ArExportService;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using RabbitMq_integration.Configuration;
 using RabbitMq_integration.HealthcareSystem;
 
 namespace RabbitMq_integration.BackgroundServices;
@@ -16,8 +14,7 @@ internal class InitialPopulationJob : IHostedService
     private readonly ILogger<InitialPopulationJob> _logger;
     private readonly IARExportService _arExportService;
 
-    public InitialPopulationJob(IHealthCareSystem healthCareSystem, IARExportService arExportService,
-        IOptions<RegisterPlatformSettings> options, ILogger<InitialPopulationJob> logger)
+    public InitialPopulationJob(IHealthCareSystem healthCareSystem, IARExportService arExportService, ILogger<InitialPopulationJob> logger)
     {
         _healthCareSystem = healthCareSystem;
         _logger = logger;
