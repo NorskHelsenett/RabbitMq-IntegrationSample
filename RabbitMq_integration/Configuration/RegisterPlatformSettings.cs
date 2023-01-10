@@ -38,4 +38,10 @@ public class RegisterPlatformSettings
 	/// Enable SSL for connection to RabbitMQ
 	/// </summary>
 	public bool BusSslEnabled { get; set; }
+
+
+	/// <summary>
+	/// The URL to ArExportService in the relevant environment.
+	/// </summary>
+	public string ArExportServiceUrl { get; set; }
 }

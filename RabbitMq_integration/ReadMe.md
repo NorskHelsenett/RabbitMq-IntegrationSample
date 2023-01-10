@@ -12,6 +12,10 @@ CommunicationPartyService is used to fetch data about the communicationParty whe
 
 CommunicationPartyService, ServiceBusManagerV2 and RabbitMq requires an QrgUsr in RegisterPlattformen.
 
+# Initial population
+The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag "initpop"), and can then be left out.
+For convenience, two run profiles are included - one that runs the initial population and one that does not.
+
 ## Getting started:
 * Aquire an OrgUsr in RegisterPlattformen
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
@@ -34,3 +38,4 @@ The example is found under BackgroundServices/AmqpQueueConsumer.
 ## Stream client
 Client for consuming streams. This example is work in progress.
 * [.net stream client](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client)
+

@@ -83,7 +83,7 @@ public class AmqpQueueConsumer : BackgroundService
             // Handle application shutdown gracefully:
             stoppingToken.Register(() => CloseChannel(channel, consumerTag, connection));
 
-            _logger.LogInformation("Subscription set up successfully. Listening...");
+            _logger.LogInformation("Subscription set up successfully. Listening for changes in Address Registry...");
             return true;
         }
         catch (Exception e)

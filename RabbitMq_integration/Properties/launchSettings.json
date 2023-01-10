@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Run with initial population": {
+      "commandName": "Project",
+      "commandLineArgs": "initpop"
+    },
+    "Run without initial population": {
+      "commandName": "Project"
+    }
+  }
+}

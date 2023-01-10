@@ -1,4 +1,8 @@
 ﻿
+using System;
+using System.ServiceModel;
+using ArExportService;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,32 +20,44 @@ namespace RabbitMq_integration
     {
         static void Main(string[] args)
         {
+	        bool performInitialPopulation = args.Contains("initpop", StringComparer.InvariantCultureIgnoreCase);
+
 	        var host = Host.CreateDefaultBuilder()
 		        .ConfigureLogging(builder =>
 			        builder.AddSimpleConsole(configure =>
 				        configure.TimestampFormat = "HH:mm:ss "))
-                .ConfigureServices((hostContext, services) =>
-                {
-					// Load config into a class
-					services.Configure<RegisterPlatformSettings>(hostContext.Configuration.GetSection("RegisterPlatformSettings"));
+		        .ConfigureAppConfiguration(builder => builder.AddCommandLine(args))
+		        .ConfigureServices((hostContext, services) =>
+		        {
+			        // Load config into a class
+			        services.Configure<RegisterPlatformSettings>(hostContext.Configuration.GetSection("RegisterPlatformSettings"));
 
-					// A RegisterPlatform service for creating a subscription on RabbitMq
-					services.AddSingleton<IServiceBusManagerV2>(CreateServiceBusManagerService);
-					// A RegisterPlatform service for fetching CommunicationParties from AddressRegister
-					services.AddSingleton<ICommunicationPartyService>(CreateCommunicationPartyService);
-					// A factory for creating connections to RabbitMq
-					services.AddSingleton<IConnectionFactory>(CreateRabbitMqConnectionFactory);
-					// A dummy health care system that will receive updates from AddressRegister
-					services.AddSingleton<IHealthCareSystem, HealthCareSystemStub>();
+			        // A dummy health care system that will receive updates from AddressRegister
+			        services.AddSingleton<IHealthCareSystem, HealthCareSystemStub>();
 
-					// A hosted service that will listen to events on RabbitMq, fetch changes from AddressRegistry and send them to a Health Care System
-					services.AddHostedService<AmqpQueueConsumer>();
-                })
-                .Build();
-            host.Run();
+					// Run init pop only if command line flag is specified
+			        if (performInitialPopulation)
+			        {
+				        services.AddSingleton<IARExportService>(CreateArExportService);
+				        // A hosted service that will perform the initial population of communication parties that already exist in the Address Registry
+				        services.AddHostedService<InitialPopulationJob>();
+			        }
+
+			        // A RegisterPlatform service for creating a subscription on RabbitMq
+			        services.AddSingleton<IServiceBusManagerV2>(CreateServiceBusManagerService);
+			        // A RegisterPlatform service for fetching CommunicationParties from AddressRegister
+			        services.AddSingleton<ICommunicationPartyService>(CreateCommunicationPartyService);
+			        // A factory for creating connections to RabbitMq
+			        services.AddSingleton<IConnectionFactory>(CreateRabbitMqConnectionFactory);
+					
+			        // A hosted service that will listen to events on RabbitMq, fetch changes from AddressRegistry and send them to a Health Care System
+			        services.AddHostedService<AmqpQueueConsumer>();
+		        })
+		        .Build();
+	        host.Run();
         }
 
-		/// <summary>
+        /// <summary>
 		/// Create a WCF Proxy for CommunicationPartyService
 		/// </summary>
         private static ICommunicationPartyService CreateCommunicationPartyService(IServiceProvider serviceProvider)
@@ -94,5 +110,33 @@ namespace RabbitMq_integration
 				DispatchConsumersAsync = true,
 			};
         }
-    }
+
+		/// <summary>
+		/// Configure a WCF Proxy for ArExportService. This is used for initial population of the Health Care System,
+		/// and will stream all the communication parties from Address Registry.
+		/// The TransferMode on the binding has to be set to StreamedResponse for the streaming to work.
+		/// </summary>
+		private static IARExportService CreateArExportService(IServiceProvider serviceProvider)
+		{
+			var settings = serviceProvider.GetRequiredService<IOptions<RegisterPlatformSettings>>().Value;
+
+			var client = new ARExportServiceClient(
+				ARExportServiceClient.EndpointConfiguration.BasicHttpBinding_IARExportService,
+				settings.ArExportServiceUrl);
+
+			var basicHttpBinding = (BasicHttpBinding)client.Endpoint.Binding;
+			// This must be set in order to properly stream the response instead of downloading everything to memory first:
+			basicHttpBinding.TransferMode = TransferMode.StreamedResponse;
+			// Increase timeouts to allow server to build the response:
+			basicHttpBinding.ReceiveTimeout = TimeSpan.FromMinutes(10);
+			basicHttpBinding.CloseTimeout = TimeSpan.FromMinutes(10);
+			basicHttpBinding.OpenTimeout = TimeSpan.FromMinutes(10);
+			basicHttpBinding.SendTimeout = TimeSpan.FromMinutes(10);
+
+			client.ClientCredentials.UserName.UserName = settings.RegisterUserName;
+			client.ClientCredentials.UserName.Password = settings.RegisterPassword;
+			return client;
+		}
+
+}
 }
