@@ -71,6 +71,7 @@ public class AmqpQueueConsumer : BackgroundService
         {
             connection = _busConnectionFactory.CreateConnection(); 
             IModel channel = connection.CreateModel();
+            
             // Set up a consumer that handles AMQP10 properties
             var consumer = new Amqp10AwareAsyncConsumer(channel);
             // Register event handler
@@ -161,6 +162,9 @@ public class AmqpQueueConsumer : BackgroundService
     private void CloseChannel(IModel channel, string consumerTag, IConnection? connection)
     {
         channel.BasicCancel(consumerTag);
+
+        // Allow already received messages some time to process before we tear down the channel:
+        Thread.Sleep(TimeSpan.FromSeconds(3));
 
         connection?.Close();
         connection?.Dispose();
