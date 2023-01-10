@@ -13,7 +13,7 @@ CommunicationPartyService is used to fetch data about the communicationParty whe
 ArExportService, CommunicationPartyService, ServiceBusManagerServiceV2 and RabbitMq requires an OrgUsr in RegisterPlattformen.  
 WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport), [CommunicationPartyService](https://register-web.test.nhn.no/v1/AR) and [ServiceBusManagerServiceV2](https://register-web.test.nhn.no/v2/servicebusmanager)
 
-## Initial population
+### Initial population
 The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `initpop`), and can then be left out.
 For convenience, two run profiles are included - one that runs the initial population and one that does not.
 
