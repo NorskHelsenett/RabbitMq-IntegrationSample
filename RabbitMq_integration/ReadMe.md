@@ -6,20 +6,21 @@ RabbitMq is set up with a stream (maybe queues also) where you will find the eve
 The AmqpQueueConsumer is configured to consume AMQP queues, this means that you have to use ServiceBusManagerV2 to retrieve your AMQP queue name.
 We create a client for ServiceBusManagerV2 in Program.cs.
 
-The stream client is not dependent on ServiceBuManagerV2 as it only consume streams. All clients can connect to the same stream, meaning that the name of a stream will be predefined.
+The stream client is not dependent on ServiceBuManagerV2 as it only consume streams. All clients can connect to the same stream, meaning that the stream name will be predefined.
 
 CommunicationPartyService is used to fetch data about the communicationParty when the consumer receives an event.
 
-CommunicationPartyService, ServiceBusManagerV2 and RabbitMq requires an QrgUsr in RegisterPlattformen.
+ArExportService, CommunicationPartyService, ServiceBusManagerServiceV2 and RabbitMq requires an OrgUsr in RegisterPlattformen.
 
-# Initial population
-The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag "initpop"), and can then be left out.
+## Initial population
+The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `initpop`), and can then be left out.
 For convenience, two run profiles are included - one that runs the initial population and one that does not.
 
 ## Getting started:
-* Aquire an OrgUsr in RegisterPlattformen
+* Acquire an OrgUsr in RegisterPlattformen
+* WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport), [CommunicationPartyService](https://register-web.test.nhn.no/v1/AR) and [ServiceBusManagerServiceV2](https://register-web.test.nhn.no/v2/servicebusmanager)
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
-* Fill out SubscriptionIdentifier with the OrgUsr Username this needs to be unique, so it is best to use your OrgUsr Username
+* Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have there own unique SubscriptionIdentifier 
 * Make sure BusHostname is correct og that the BusPort is `5671` and BusSslEnabled is `true`
 * Run the application
 
