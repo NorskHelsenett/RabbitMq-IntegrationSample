@@ -13,15 +13,15 @@ public interface IHealthCareSystem
 /// </summary>
 public class HealthCareSystemStub : IHealthCareSystem
 {
-	private readonly ILogger<HealthCareSystemStub> _logger;
+    private readonly ILogger<HealthCareSystemStub> _logger;
 
-	public HealthCareSystemStub(ILogger<HealthCareSystemStub> logger)
-	{
-		_logger = logger;
-	}
+    public HealthCareSystemStub(ILogger<HealthCareSystemStub> logger)
+    {
+        _logger = logger;
+    }
 
     public void CommunicationPartyUpdated(CommunicationParty.CommunicationParty communicationParty)
     {
-	    _logger.LogInformation("Health Care System received an update to communication party " + communicationParty.HerId);
+        _logger.LogInformation("Health Care System received an update to communication party " + communicationParty.HerId);
     }
 }
