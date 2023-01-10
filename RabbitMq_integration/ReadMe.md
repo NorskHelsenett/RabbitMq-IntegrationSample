@@ -2,7 +2,7 @@
 This repo contains examples on how to setup a RabbitMq client and how to connect it to a queue.
 How to use the events to sync updates to a healthcare system.
 
-RabbitMq is set up with a stream (maybe queues also) where you will find the events `CommunicationPartyUpdated` and `CommunicationPartyCreated`.
+RabbitMq is set up with a stream (maybe queues also) where you will find the events `CommunicationPartyUpdated` and `CommunicationPartyCreated`.  
 The AmqpQueueConsumer is configured to consume AMQP queues, this means that you have to use ServiceBusManagerV2 to retrieve your AMQP queue name.
 We create a client for ServiceBusManagerV2 in Program.cs.
 
