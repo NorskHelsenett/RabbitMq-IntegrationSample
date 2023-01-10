@@ -2,12 +2,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
+using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
 using InitialPopulation.ArExportService;
+using InitialPopulation.HealthcareSystem;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMq_integration.ArExportService;
 
 namespace InitialPopulation;
@@ -19,8 +21,9 @@ class Program
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices((hostContext, services) =>
             {
-                //See InitialPopulation to see how to do a initial population of your healthcaresystem
-                services.AddSingleton<IARExportService>(CreateARExportService);
+                //See InitialPopulation to see how to do a initial population of your health care system
+                services.AddSingleton<IARExportService>(CreateArExportService);
+                services.AddSingleton<IHealthCareSystem, HealthCareSystem>();
                 services.AddScoped<CommunicationPartyExportService>();
                 services.AddHostedService<InitialPopulationJob>();
             })
@@ -28,73 +31,62 @@ class Program
         host.Run();
     }
 
-    private static IARExportService CreateARExportService(IServiceProvider provider)
+    private static IARExportService CreateArExportService(IServiceProvider provider)
     {
-        System.ServiceModel.BasicHttpBinding binding = new System.ServiceModel.BasicHttpBinding();
-        binding.MaxBufferSize = int.MaxValue;
-        binding.ReaderQuotas = System.Xml.XmlDictionaryReaderQuotas.Max;
-        binding.MaxReceivedMessageSize = int.MaxValue;
-        binding.AllowCookies = true;
-        binding.Security.Mode = System.ServiceModel.BasicHttpSecurityMode.Transport;
-        binding.Security.Transport.ClientCredentialType = System.ServiceModel.HttpClientCredentialType.Basic;
-        
-        //Setting timeout period to make sure the connection is not closed.
-        binding.ReceiveTimeout = new TimeSpan(0, 10, 0);
-        binding.CloseTimeout = new TimeSpan(0, 10, 0);
-        binding.OpenTimeout = new TimeSpan(0, 10, 0);
-        binding.SendTimeout = new TimeSpan(0, 10, 0);
-        
-        var client = new ARExportServiceClient(binding, "https://ws.dev.nhn.no/v1/ARExport");
-        client.ClientCredentials.UserName.UserName = "";
-        client.ClientCredentials.UserName.Password = "";
-        return client;
+	    var client = new ARExportServiceClient(
+		    ARExportServiceClient.EndpointConfiguration.BasicHttpBinding_IARExportService,
+		    "https://ws-web.test.nhn.no/v1/ARExport");
+	    
+	    var basicHttpBinding = (BasicHttpBinding)client.Endpoint.Binding;
+		// This must be set in order to properly stream the response instead of downloading everything to memory first:
+		basicHttpBinding.TransferMode = TransferMode.StreamedResponse;
+		// Increase timeouts to allow server to build the response:
+	    basicHttpBinding.ReceiveTimeout = TimeSpan.FromMinutes(10);
+	    basicHttpBinding.CloseTimeout = TimeSpan.FromMinutes(10);
+	    basicHttpBinding.OpenTimeout = TimeSpan.FromMinutes(10);
+	    basicHttpBinding.SendTimeout = TimeSpan.FromMinutes(10);
+
+	    client.ClientCredentials.UserName.UserName = ""; // Register platform user
+	    client.ClientCredentials.UserName.Password = "";
+	    return client;
     }
 }
 
-internal class InitialPopulationJob : IHostedService
+internal class InitialPopulationJob :BackgroundService
 {
     private readonly CommunicationPartyExportService _communicationPartyExportService;
 
-    private static readonly DataContractSerializer ComPartyListSerializer =
-        new(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
+    private readonly IHealthCareSystem _healthCareSystem;
+    private readonly ILogger<InitialPopulationJob> _logger;
 
-    //private readonly IHealthCareSystem _healthCareSystem;
-
-    public InitialPopulationJob(CommunicationPartyExportService communicationPartyExportService)
+    public InitialPopulationJob(CommunicationPartyExportService communicationPartyExportService, IHealthCareSystem healthCareSystem, ILogger<InitialPopulationJob> logger)
     {
-        _communicationPartyExportService = communicationPartyExportService;
-        //_healthCareSystem = healthcareSystem;
+	    _communicationPartyExportService = communicationPartyExportService;
+	    _healthCareSystem = healthCareSystem;
+	    _logger = logger;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Console.WriteLine("Starting InitialPopulation....");
-        SyncAllCommunicationParties();
-        return StopAsync(cancellationToken);
+		_logger.LogInformation("Initial population start...");
+	    await SyncAllCommunicationPartiesAsync(stoppingToken);
+	    _logger.LogInformation("Initial population end...");
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    private async Task SyncAllCommunicationPartiesAsync(CancellationToken stoppingToken)
     {
-        Console.WriteLine("Stopping InitialPopulation...");
-        return Task.CompletedTask;
-    }
-
-    private void SyncAllCommunicationParties()
-    {
-        try
-        {
-            //Fetching data
-            var data = _communicationPartyExportService.GetAllCommunicationPartiesXml();
-            foreach (var cp in data)
-            {
-                //_healthCareSystem.CPUpdate(cp);
-            }
-
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Something went wrong when populating Healthcare system with Cpp/a");
-            Console.WriteLine(e.Message);
-        }
+	    var comParties = _communicationPartyExportService.GetAllCommunicationPartiesXmlAsync(stoppingToken);
+	 
+	    await foreach (var comParty in comParties.WithCancellation(stoppingToken))
+	    {
+		    try
+		    {
+			    _healthCareSystem.CommunicationPartyUpdate(comParty);
+		    }
+		    catch (Exception e)
+		    {
+			    _logger.LogError(e, "Could not run initial population on communication party {HerId}", comParty.HerId);
+		    }
+	    }
     }
 }

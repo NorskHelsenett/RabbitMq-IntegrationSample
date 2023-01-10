@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Xml;
+using System.Xml.Serialization;
 using InitialPopulation.ArExportService;
 
 namespace RabbitMq_integration.ArExportService;
@@ -9,31 +11,39 @@ namespace RabbitMq_integration.ArExportService;
 public class CommunicationPartyExportService
 {
     private readonly IARExportService _arExportService;
-    private static byte[] _cachedData;
-    private static DateTime _lastLoad;
 
     public CommunicationPartyExportService(IARExportService arExportService)
     {
         _arExportService = arExportService;
     }
 
-    public List<InitialPopulation.CommunicationParty.CommunicationParty>? GetAllCommunicationPartiesXml()
+    public async IAsyncEnumerable<InitialPopulation.CommunicationParty.CommunicationParty>
+	    GetAllCommunicationPartiesXmlAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        try
-        {
-            var res = _arExportService.GetAllCommunicationPartiesXmlAsync().GetAwaiter().GetResult();
-            var dcs = new DataContractSerializer(typeof(List<InitialPopulation.CommunicationParty.CommunicationParty>));
-            List<InitialPopulation.CommunicationParty.CommunicationParty> result;
-            using (var xmlReader = XmlReader.Create(res))
-            {
-                result = dcs.ReadObject(xmlReader) as List<InitialPopulation.CommunicationParty.CommunicationParty>;
-            }
-            return result; 
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Cache generation failed with {0}", ex);
-            throw;
-        }
+	    Stream? res = await _arExportService.GetAllCommunicationPartiesXmlAsync();
+	    Console.WriteLine("Done downloading");
+
+	    var cpSerializer =
+		    new DataContractSerializer(typeof(InitialPopulation.CommunicationParty.CommunicationParty));
+
+	    var xmlReaderSettings = new XmlReaderSettings
+	    {
+		    Async = true
+
+	    };
+	    using var xmlReader = XmlReader.Create(res, xmlReaderSettings);
+	    await xmlReader.MoveToContentAsync();
+
+	    while (await xmlReader.ReadAsync() && cancellationToken.IsCancellationRequested == false)
+	    {
+		    if (xmlReader.NodeType == XmlNodeType.Element)
+		    {
+			    var communicationParty =
+				    (InitialPopulation.CommunicationParty.CommunicationParty) cpSerializer.ReadObject(
+					    xmlReader)!;
+
+			    yield return communicationParty;
+		    }
+	    }
     }
 }
