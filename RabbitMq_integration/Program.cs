@@ -65,7 +65,7 @@ namespace RabbitMq_integration
             var settings = serviceProvider.GetRequiredService<IOptions<RegisterPlatformSettings>>().Value;
 
             var client = new CommunicationPartyServiceClient(CommunicationPartyServiceClient.EndpointConfiguration
-                .WSHttpBinding_ICommunicationPartyService);
+                .WSHttpBinding_ICommunicationPartyService, settings.CommunicationPartyServiceUrl);
             
             client.ClientCredentials.UserName.UserName = settings.RegisterUserName;
             client.ClientCredentials.UserName.Password = settings.RegisterPassword;

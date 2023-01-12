@@ -12,12 +12,6 @@ public class RegisterPlatformSettings
     /// </summary>
     public string RegisterPassword { get; set; }
 
-
-    /// <summary>
-    /// The URL to ServiceBusManager v2 in the relevant environment.
-    /// </summary>
-    public string ServiceBusManagerUrl { get; set; }
-
     /// <summary>
     /// Some unique identifier for this subscription, to ensure that the same subscription is kept across sessions.
     /// </summary>
@@ -38,10 +32,19 @@ public class RegisterPlatformSettings
     /// Enable SSL for connection to RabbitMQ
     /// </summary>
     public bool BusSslEnabled { get; set; }
-
-
+    
+    /// <summary>
+    /// The URL to ServiceBusManager v2 in the relevant environment.
+    /// </summary>
+    public string ServiceBusManagerUrl { get; set; }
+    
     /// <summary>
     /// The URL to ArExportService in the relevant environment.
     /// </summary>
     public string ArExportServiceUrl { get; set; }
+    
+    /// <summary>
+    /// The URL to CommunicationParty in the relevant environment.
+    /// </summary>
+    public string CommunicationPartyServiceUrl { get; set; }
 }
