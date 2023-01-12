@@ -18,7 +18,7 @@ For convenience, two run profiles are included - one that runs the initial popul
 * Acquire an OrgUsr in RegisterPlattformen
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
 * Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have their own unique SubscriptionIdentifier 
-* Make sure BusHostname is correct og that the BusPort is `5551` and BusSslEnabled is `true`
+* Make sure BusHostname is correct and that the BusPort is `5551` and BusSslEnabled is `true`
 * Run the application `dotnet run`
 
 ## RabbitMq
