@@ -1,9 +1,9 @@
-# Examples for RabbitMq client setup
-This repo contains examples on how to setup a RabbitMq stream client and how to connect it to a queue.
+# Example for RabbitMq stream client setup
+This is a example on how to setup a RabbitMq stream client and how to connect it to a stream.
 How to use the events to sync updates to a healthcare system.
 
-RabbitMq is set up with a stream (maybe queues also) where you will find the events `CommunicationPartyUpdated` and `CommunicationPartyCreated`.
-The stream client is not dependent on ServiceBuManagerV2 as it only consume streams. All clients can connect to the same stream, meaning that the stream name will be predefined.
+RabbitMq is set up with a stream (maybe queues also) where you will find the events `CommunicationPartyUpdated` and `CommunicationPartyCreated`. 
+All clients connect to the same stream, meaning that the stream name will be predefined.
 
 CommunicationPartyService is used to fetch data about the communicationParty when the consumer receives an event.
 
@@ -17,7 +17,7 @@ For convenience, two run profiles are included - one that runs the initial popul
 ## Getting started:
 * Acquire an OrgUsr in RegisterPlattformen
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
-* Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have there own unique SubscriptionIdentifier 
+* Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have their own unique SubscriptionIdentifier 
 * Make sure BusHostname is correct og that the BusPort is `5551` and BusSslEnabled is `true`
 * Run the application `dotnet run`
 
