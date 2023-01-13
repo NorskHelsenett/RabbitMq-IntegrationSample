@@ -49,6 +49,11 @@ public class RabbitStreamConsumer : BackgroundService
         }
     }
     
+    /// <summary>
+    /// Setting up stream consumer
+    /// </summary>
+    /// <param name="stoppingToken"></param>
+    /// <returns></returns>
     private async Task<bool> TrySetupConsumer(CancellationToken stoppingToken)
     {
         // How to get ip from URL
@@ -122,6 +127,11 @@ public class RabbitStreamConsumer : BackgroundService
         
     }
 
+    /// <summary>
+    /// Handle the incoming message.
+    /// </summary>
+    /// <param name="sourceStream"></param>
+    /// <param name="message"></param>
     private async Task HandleMessage(string sourceStream, Message message)
     {
         Console.WriteLine(

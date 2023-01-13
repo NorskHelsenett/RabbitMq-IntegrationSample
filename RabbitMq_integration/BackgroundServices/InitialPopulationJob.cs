@@ -33,6 +33,10 @@ internal class InitialPopulationJob : IHostedService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Fetching all CommunicationParties and syncing them to a healthcaresystem
+    /// </summary>
+    /// <param name="cancellationToken"></param>
     private async Task SyncAllCommunicationPartiesAsync(CancellationToken cancellationToken)
     {
         var comParties = StreamAllCommunicationParties(cancellationToken);
@@ -50,6 +54,11 @@ internal class InitialPopulationJob : IHostedService
         }
     }
 
+    /// <summary>
+    /// Setting up stream for fetching CommunicationParties
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     private async IAsyncEnumerable<CommunicationParty.CommunicationParty> StreamAllCommunicationParties([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         Stream? res = await _arExportService.GetAllCommunicationPartiesXmlAsync();
