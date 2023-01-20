@@ -24,6 +24,7 @@ public class RabbitStreamConsumer : BackgroundService
     private readonly IHealthCareSystem _healthCareSystem;
     
     private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(25);
+    private readonly Random rnd = new Random();
     
     public RabbitStreamConsumer(IOptions<RegisterPlatformSettings> settings, ICommunicationPartyService communicationPartyService, StreamSystemConfig busStreamSystemConfig, IHealthCareSystem healthCareSystem, ILogger<RabbitStreamConsumer> logger, ILogger<Consumer> consumeLogger)
     {
@@ -88,9 +89,17 @@ public class RabbitStreamConsumer : BackgroundService
             // Reference for the connection, this need to be a unique id.
             string reference = _settings.SubscriptionIdentifier;
 
-            //Getting the offest from the server.
-            var trackedOffset = await system.QueryOffset(reference, stream);
             int messagesConsumed = 0;
+            ulong trackedOffset = 0;
+            //Getting the offest from the server.
+            try
+            {
+                trackedOffset = await system.QueryOffset(reference, stream);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Kunne ikke hente offset");
+            }
 
             // Create a consumer
             consumer = await Consumer.Create(
@@ -98,12 +107,12 @@ public class RabbitStreamConsumer : BackgroundService
                 {
                     Reference = reference,
                     // Consume the stream from the offest recived from the server
-                    OffsetSpec = new OffsetTypeOffset(trackedOffset),
+                    OffsetSpec = trackedOffset == 0 ? new OffsetTypeLast() : new OffsetTypeOffset(trackedOffset),
                     // Receive the messages
                     MessageHandler = async (sourceStream, consumer, ctx, message) =>
                     {
                         //Storing offest after each 100 message is consumed.
-                        if (++messagesConsumed % 100 == 0)
+                        if (messagesConsumed != 0 && ++messagesConsumed % 100 == 0)
                         {
                             await consumer.StoreOffset(ctx.Offset);
                         }
@@ -118,7 +127,7 @@ public class RabbitStreamConsumer : BackgroundService
             return true;
         } catch (Exception e)
         {
-            _logger.LogError(e, "Failed to set up connection to queue {_settings.QueueName} on RabbitMq. It may not have been created yet, will retry in a moment...", _settings.QueueName);
+            _logger.LogError(e, "Failed to set up connection to stream {_settings.QueueName} on RabbitMq. It may not have been created yet, will retry in a moment...", _settings.QueueName);
 
             await consumer?.Close()!;
             await system?.Close()!;
@@ -134,18 +143,20 @@ public class RabbitStreamConsumer : BackgroundService
     /// <param name="message"></param>
     private async Task HandleMessage(string sourceStream, Message message)
     {
-        Console.WriteLine(
-            $"message: coming from {sourceStream} MessageId: {message.Properties.MessageId.ToString()} - consumed");
-        var data = Encoding.Default.GetString(message.Data.Contents.ToArray());
-        //var eventName = GetExpectedHeader<string>(message.Properties.ContentType, "eventName");
+        /*Console.WriteLine(
+            $"message: coming from {sourceStream} MessageId: {message.Properties.MessageId.ToString()} - consumed");*/
+        var eventName = GetExpectedHeader<string>(message.ApplicationProperties, "eventName");
 
         var relevantEvents = new[] { "CommunicationPartyCreated", "CommunicationPartyUpdated" };
-        if (relevantEvents.Contains(message.AmqpValue))
+        if (relevantEvents.Contains(eventName))
         {
             // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
             
-            var herId = 0;
-            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(herId);
+            var herId = GetExpectedHeader<string>(message.ApplicationProperties, "herId");
+            
+            int mseconds = rnd.Next(50,5000);
+            Thread.Sleep(mseconds); // Add random sleeptime to spread out load when a new event comes
+            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(Int32.Parse(herId));
 
             // Send the update to the health care system
             _healthCareSystem.CommunicationPartyUpdated(communicationParty);

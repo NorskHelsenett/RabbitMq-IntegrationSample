@@ -10,7 +10,9 @@ using RabbitMq_Stream_integration.BackgroundServices;
 using RabbitMq_Stream_integration.CommunicationParty;
 using RabbitMq_Stream_integration.Configuration;
 using RabbitMq_Stream_integration.HealthcareSystem;
+using RabbitMQ.Client;
 using RabbitMQ.Stream.Client;
+using SslOption = RabbitMQ.Stream.Client.SslOption;
 
 namespace RabbitMq_Stream_integration
 {
@@ -48,7 +50,7 @@ namespace RabbitMq_Stream_integration
                     services.AddSingleton<ICommunicationPartyService>(CreateCommunicationPartyService);
                     // A factory for creating connections to RabbitMq
                     services.AddSingleton<StreamSystemConfig>(CreateRabbitMqConnectionFactory);
-                    
+
                     // A hosted service that will listen to events on RabbitMq, fetch changes from AddressRegistry and send them to a Health Care System
                     services.AddHostedService<RabbitStreamConsumer>();
                 })
@@ -83,11 +85,13 @@ namespace RabbitMq_Stream_integration
             {
                 UserName = settings.RegisterUserName,
                 Password = settings.RegisterPassword,
-                VirtualHost = settings.BusHostname,
+                VirtualHost = "/",
+                Endpoints = new List<EndPoint> {new DnsEndPoint(settings.BusHostname, settings.BusPort)},
                 AddressResolver = new AddressResolver(new DnsEndPoint(settings.BusHostname, settings.BusPort)),
-                Ssl = new SslOption
+                Ssl = new SslOption()
                 {
                     Enabled = settings.BusSslEnabled,
+                    ServerName = settings.BusHostname
                 },
                 ClientProvidedName = settings.SubscriptionIdentifier
             };
