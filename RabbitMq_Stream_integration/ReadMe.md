@@ -29,6 +29,6 @@ Information about RabbitMq and RabbitMq Clients in general.
 There is also examples for other languages(Java and Go).
 
 ## Stream client
-Client for consuming streams. This example is work in progress.
+Client for consuming streams. This client is work in progress.
 * [.net stream client](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client)
 

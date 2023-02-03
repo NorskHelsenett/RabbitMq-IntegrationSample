@@ -10,7 +10,6 @@ using RabbitMq_Stream_integration.BackgroundServices;
 using RabbitMq_Stream_integration.CommunicationParty;
 using RabbitMq_Stream_integration.Configuration;
 using RabbitMq_Stream_integration.HealthcareSystem;
-using RabbitMQ.Client;
 using RabbitMQ.Stream.Client;
 using SslOption = RabbitMQ.Stream.Client.SslOption;
 

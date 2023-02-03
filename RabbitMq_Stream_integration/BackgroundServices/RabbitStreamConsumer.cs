@@ -1,16 +1,15 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Buffers;
-using System.Net;
-using System.Text;
-using Amqp;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using RabbitMq_Stream_integration.CommunicationParty;
 using RabbitMq_Stream_integration.Configuration;
 using RabbitMq_Stream_integration.HealthcareSystem;
 using RabbitMQ.Stream.Client;
 using RabbitMQ.Stream.Client.Reliable;
 using Message = RabbitMQ.Stream.Client.Message;
+using RabbitMq_Stream_integration.AmqpInterop;
 
 namespace RabbitMq_Stream_integration.BackgroundServices;
 // This example is based on version 1.0.0
@@ -57,22 +56,6 @@ public class RabbitStreamConsumer : BackgroundService
     /// <returns></returns>
     private async Task<bool> TrySetupConsumer(CancellationToken stoppingToken)
     {
-        // How to get ip from URL
-        /*IPAddress ipAddress = (await Dns.GetHostEntryAsync("www.nhn.no")).AddressList[0];
-
-        var config = new StreamSystemConfig
-        {
-            UserName = "guest",
-            Password = "guest",
-            VirtualHost = "/",
-            Endpoints = new List<EndPoint> { new IPEndPoint(ipAddress, 5552) },
-            Ssl = new SslOption()
-            {
-                Enabled = true
-            }
-        };
-        */
-
         StreamSystem? system = null;
         Consumer? consumer = null;
         
@@ -112,12 +95,12 @@ public class RabbitStreamConsumer : BackgroundService
                     MessageHandler = async (sourceStream, consumer, ctx, message) =>
                     {
                         //Storing offest after each 100 message is consumed.
-                        if (messagesConsumed != 0 && ++messagesConsumed % 100 == 0)
+                        if (++messagesConsumed != 0 && messagesConsumed % 100 == 0)
                         {
                             await consumer.StoreOffset(ctx.Offset);
                         }
 
-                        await HandleMessage(sourceStream, message);
+                        await HandleMessage(sourceStream, message, messagesConsumed);
                     }
                 }, _consumeLogger);
             
@@ -141,38 +124,28 @@ public class RabbitStreamConsumer : BackgroundService
     /// </summary>
     /// <param name="sourceStream"></param>
     /// <param name="message"></param>
-    private async Task HandleMessage(string sourceStream, Message message)
+    private async Task HandleMessage(string sourceStream, Message message, int messagesConsumed)
     {
-        /*Console.WriteLine(
-            $"message: coming from {sourceStream} MessageId: {message.Properties.MessageId.ToString()} - consumed");*/
-        var eventName = GetExpectedHeader<string>(message.ApplicationProperties, "eventName");
-
+        var props = message.ApplicationProperties;
         var relevantEvents = new[] { "CommunicationPartyCreated", "CommunicationPartyUpdated" };
-        if (relevantEvents.Contains(eventName))
+        if (relevantEvents.Contains(props["eventName"]))
         {
             // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
             
-            var herId = GetExpectedHeader<string>(message.ApplicationProperties, "herId");
+            var herId = props["herId"].ToString();
+            Console.WriteLine("Readed messageNr: " + messagesConsumed + ", with herId: " + herId);
             
             int mseconds = rnd.Next(50,5000);
             Thread.Sleep(mseconds); // Add random sleeptime to spread out load when a new event comes
-            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(Int32.Parse(herId));
+            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(Int32.Parse(herId!));
 
             // Send the update to the health care system
             _healthCareSystem.CommunicationPartyUpdated(communicationParty);
         }
     }
-
-    private static T GetExpectedHeader<T>(IDictionary<string, object> basicPropertiesHeaders, string headerName)
-    {
-        var foundHeaderValue = basicPropertiesHeaders[headerName];
-        var convertedType = Convert.ChangeType(foundHeaderValue, typeof(T));
-        return (T)convertedType;
-    }
-
+    
     private void CloseChannel(StreamSystem system, Consumer consumer)
     {
-
         // Allow already received messages some time to process before we tear down the channel:
         Thread.Sleep(TimeSpan.FromSeconds(3));
 
