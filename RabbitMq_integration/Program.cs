@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.ServiceModel;
+﻿using System.ServiceModel;
 using ArExportService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
