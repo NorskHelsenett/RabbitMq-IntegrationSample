@@ -10,7 +10,7 @@ using Message = RabbitMQ.Stream.Client.Message;
 
 namespace RabbitMq_Stream_integration.BackgroundServices;
 // This example is based on version 1.0.0
-public class RabbitStreamConsumer : BackgroundService, IDisposable
+public class RabbitStreamConsumer : BackgroundService
 {
     private readonly ILogger _logger;
     private readonly ILogger<Consumer> _consumeLogger;
@@ -80,14 +80,21 @@ public class RabbitStreamConsumer : BackgroundService, IDisposable
             {
                 _logger.LogError(e, "Could not receive the offset");
             }
+            
+            //Setting timestamp 30 minutes in the past to make sure not to miss any. It needs to be converted to a long. 
+            var offsetTimestamp = (long)DateTime.UtcNow.AddMinutes(-30).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
             // Create a consumer
             consumer = await Consumer.Create(
                 new ConsumerConfig(system, stream)
                 {
                     Reference = reference,
-                    // Consume the stream from the offest recived from the server
-                    OffsetSpec = new OffsetTypeOffset(290), //trackedOffset == 0 ? new OffsetTypeOffset(287) : new OffsetTypeOffset(trackedOffset),
+                    /*
+                    Consume the stream from the offest recived
+                    If the offset i 0 then it set to use OffsetTypeTimestamp, which takes the first message after a specified timestamp.
+                    We presume that Initial population is ran before the stream consumer i started.
+                    */
+                    OffsetSpec = trackedOffset == 0 ? new OffsetTypeTimestamp(offsetTimestamp) : new OffsetTypeOffset(trackedOffset),
                     // Receive the messages
                     MessageHandler = async (sourceStream, consumer, ctx, message) =>
                     {
