@@ -98,8 +98,8 @@ public class RabbitStreamConsumer : BackgroundService
                     // Receive the messages
                     MessageHandler = async (sourceStream, consumer, ctx, message) =>
                     {
-                        //Storing offest after each 100 message is consumed.
-                        if (++messagesConsumed != 0)
+                        //Storing offest after each 10 message is consumed.
+                        if (++messagesConsumed % 10 == 0)
                         {
                             await consumer.StoreOffset(ctx.Offset);
                             _logger.LogInformation("Stored offset: {ctx.Offset}", ctx.Offset);
