@@ -140,7 +140,7 @@ public class RabbitStreamConsumer : BackgroundService
             Console.WriteLine("Read message: " + messagesConsumed + ", with herId: " + herId);
             
             int mseconds = rnd.Next(50,5000);
-            Task.Delay(mseconds); // Add random sleeptime to spread out load when a new event comes
+            await Task.Delay(mseconds); // Add random sleeptime to spread out load when a new event comes
             var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(Int32.Parse(herId!));
 
             // Send the update to the health care system
@@ -148,11 +148,11 @@ public class RabbitStreamConsumer : BackgroundService
         }
     }
 
-    private async Task<ulong> GetOffset()
+    private Task<ulong> GetOffset()
     {
         //Implement you own solution for getting the offset from your storage.
-        ulong offset = 10;
-        return offset;
+        ulong offset = 9000;
+        return Task.FromResult(offset);
     }
     
     private void CloseChannel(StreamSystem system, Consumer consumer)
