@@ -18,14 +18,16 @@ public class RabbitStreamConsumer : BackgroundService
     private readonly StreamSystemConfig _busStreamSystemConfig;
     private readonly ICommunicationPartyService _communicationPartyService;
     private readonly IHealthCareSystem _healthCareSystem;
+    private readonly InitialPopulationData _initialPopulation;
     
     private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(25);
     private readonly Random rnd = new Random();
     
-    public RabbitStreamConsumer(IOptions<RegisterPlatformSettings> settings, ICommunicationPartyService communicationPartyService, StreamSystemConfig busStreamSystemConfig, IHealthCareSystem healthCareSystem, ILogger<RabbitStreamConsumer> logger, ILogger<Consumer> consumeLogger)
+    public RabbitStreamConsumer(IOptions<RegisterPlatformSettings> settings, ICommunicationPartyService communicationPartyService, StreamSystemConfig busStreamSystemConfig, IHealthCareSystem healthCareSystem, ILogger<RabbitStreamConsumer> logger, ILogger<Consumer> consumeLogger, InitialPopulationData initialPopulation)
     {
         _logger = logger;
         _consumeLogger = consumeLogger;
+        _initialPopulation = initialPopulation;
         _healthCareSystem = healthCareSystem;
         _busStreamSystemConfig = busStreamSystemConfig;
         _communicationPartyService = communicationPartyService;
@@ -71,18 +73,16 @@ public class RabbitStreamConsumer : BackgroundService
 
             int messagesConsumed = 0;
             ulong trackedOffset = 0;
-            //Getting the offest from the server.
+            
+            //Getting the offest from the a database or file.
             try
             {
-                trackedOffset = await system.QueryOffset(reference, stream);
+                trackedOffset = await GetOffset();
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Could not receive the offset");
             }
-            
-            //Setting timestamp 30 minutes in the past to make sure not to miss any. It needs to be converted to a long. 
-            var offsetTimestamp = (long)DateTime.UtcNow.AddMinutes(-30).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
             // Create a consumer
             consumer = await Consumer.Create(
@@ -91,17 +91,17 @@ public class RabbitStreamConsumer : BackgroundService
                     Reference = reference,
                     /*
                     Consume the stream from the offest recived
-                    If the offset i 0 then it set to use OffsetTypeTimestamp, which takes the first message after a specified timestamp.
-                    We presume that Initial population is ran before the stream consumer i started.
+                    If the initial population job is started then we use timestamp to get the first message after the specified time.
+                    Else we start with offset type first.
                     */
-                    OffsetSpec = trackedOffset == 0 ? new OffsetTypeTimestamp(offsetTimestamp) : new OffsetTypeOffset(trackedOffset),
+                    OffsetSpec = _initialPopulation.PerformInitialPopulation ? new OffsetTypeTimestamp((long)_initialPopulation.StartTime.Subtract(new DateTime(1970, 1, 1)).TotalSeconds) : new OffsetTypeOffset(trackedOffset),
                     // Receive the messages
                     MessageHandler = async (sourceStream, consumer, ctx, message) =>
                     {
                         //Storing offest after each 10 message is consumed.
                         if (++messagesConsumed % 10 == 0)
                         {
-                            await consumer.StoreOffset(ctx.Offset);
+                            // HERE: Implement function for storing the offset.
                             _logger.LogInformation("Stored offset: {ctx.Offset}", ctx.Offset);
                         }
 
@@ -146,6 +146,13 @@ public class RabbitStreamConsumer : BackgroundService
             // Send the update to the health care system
             _healthCareSystem.CommunicationPartyUpdated(communicationParty);
         }
+    }
+
+    private async Task<ulong> GetOffset()
+    {
+        //Implement you own solution for getting the offset from your storage.
+        ulong offset = 10;
+        return offset;
     }
     
     private void CloseChannel(StreamSystem system, Consumer consumer)

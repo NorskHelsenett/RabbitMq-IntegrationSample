@@ -31,6 +31,9 @@ namespace RabbitMq_Stream_integration
                 .ConfigureAppConfiguration(builder => builder.AddCommandLine(args))
                 .ConfigureServices((hostContext, services) =>
                 {
+                    // Set init pop data for globl use
+                    services.AddSingleton<InitialPopulationData>(SetInitialPopulationData(performInitialPopulation));
+                    
                     // Load config into a class
                     services.Configure<RegisterPlatformSettings>(hostContext.Configuration.GetSection("RegisterPlatformSettings"));
 
@@ -55,6 +58,15 @@ namespace RabbitMq_Stream_integration
                 })
                 .Build();
             host.Run();
+        }
+
+        private static InitialPopulationData SetInitialPopulationData(bool performInitialPopulation)
+        {
+            return new InitialPopulationData
+            {
+                PerformInitialPopulation = performInitialPopulation,
+                StartTime = DateTime.UtcNow
+            };
         }
 
         /// <summary>

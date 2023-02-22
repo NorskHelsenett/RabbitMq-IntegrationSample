@@ -35,8 +35,10 @@ Client for consuming streams. This client is work in progress.
 * [.net stream client](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client)
 
 ### Offset tracking
-It is possible to use a different offset type then what we have in the example. We use OffsetTypeTimestamp if there is no offset stored on the server for the SubscriptionIdentifier.
-After the client has read a message the offset will be stored on the server.
+It is possible to use a different offset type then what we have in the example. We use OffsetTypeTimestamp if the init pop job is run, if not then we use OffsetTypeOffset.
 The stream client supports OffsetTypeFirst, OffsetTypeLast, OffsetTypeNext, OffsetTypeOffset and OffsetTypeTimestamp.
+Serverside Offset tracking is not supported as i requires writing access to the stream.
+You need to implement your own solution for storing the message offset when a message is consumed. 
+Our example shows you how to do it if you want to store after every 10. message.
 More information about the different [offset types](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client#offset-types).
 
