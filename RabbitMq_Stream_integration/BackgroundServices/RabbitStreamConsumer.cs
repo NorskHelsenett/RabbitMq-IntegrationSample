@@ -36,24 +36,21 @@ public class RabbitStreamConsumer : BackgroundService
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await StartListeningToSubscriptionAsync(stoppingToken);
-    }
-    
-    private async Task StartListeningToSubscriptionAsync(CancellationToken stoppingToken)
-    {
-        // Subscription is created asynchronously, and may not be ready yet, so we need retry logic
-        while (!stoppingToken.IsCancellationRequested && !await TrySetupConsumer(stoppingToken))
+        try
         {
-            await Task.Delay(_retryDelay, stoppingToken);
+            await SetupConsumerAsync(stoppingToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to set up the stream. Aborting.");
         }
     }
-    
+
     /// <summary>
-    /// Setting up stream consumer
+    /// Set up the stream consumer
     /// </summary>
     /// <param name="stoppingToken"></param>
-    /// <returns></returns>
-    private async Task<bool> TrySetupConsumer(CancellationToken stoppingToken)
+    private async Task SetupConsumerAsync(CancellationToken stoppingToken)
     {
         StreamSystem? system = null;
         Consumer? consumer = null;
@@ -81,7 +78,7 @@ public class RabbitStreamConsumer : BackgroundService
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Could not receive the offset");
+                _logger.LogError(e, "Could not load the offset");
             }
 
             // Create a consumer
@@ -95,30 +92,33 @@ public class RabbitStreamConsumer : BackgroundService
                     Else we start with offset type first.
                     */
                     OffsetSpec = _initialPopulation.PerformInitialPopulation ? new OffsetTypeTimestamp((long)_initialPopulation.StartTime.Subtract(new DateTime(1970, 1, 1)).TotalSeconds) : new OffsetTypeOffset(trackedOffset),
-                    // Receive the messages
                     MessageHandler = async (_, _, ctx, message) =>
                     {
-                        //Storing offest after each 10 message is consumed.
+                        await HandleMessage(message);
+
+                        //Storing offset after each 10 message is consumed.
                         if (++messagesConsumed % 10 == 0)
                         {
                             await SaveOffsetAsync(ctx.Offset);
                         }
-
-                        await HandleMessage(message);
                     }
                 }, _consumeLogger);
             
             // Handle application shutdown gracefully:
             stoppingToken.Register(() => CloseChannel(system, consumer));
-            return true;
-        } catch (Exception e)
+        } catch (Exception)
         {
-            _logger.LogError(e, "Failed to set up connection to stream {QueueName} on RabbitMq. It may not have been created yet, will retry in a moment...", _settings.QueueName);
-            await consumer?.Close()!;
-            await system?.Close()!;
-            return false;
+            if (consumer != null)
+            {
+                await consumer.Close();
+            }
+
+            if (system != null)
+            {
+                await system.Close();
+            }
+            throw;
         }
-        
     }
 
     /// <summary>
@@ -126,18 +126,27 @@ public class RabbitStreamConsumer : BackgroundService
     /// </summary>
     private async Task HandleMessage(Message message)
     {
-        var relevantEvents = new[] { "CommunicationPartyCreated", "CommunicationPartyUpdated" };
-        if (relevantEvents.Contains(message.ApplicationProperties["eventName"]))
+        object eventName = "unknown";
+        string? herId = "unknown";
+        try
         {
-            // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
-            var herId = message.ApplicationProperties["herId"].ToString();
-            
-            await Task.Delay(_randomGenerator.Next(50,5000)); // Add random sleep time to spread out the load on AddressRegistry when a new event comes
-            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(int.Parse(herId!));
+            var relevantEvents = new[] { "CommunicationPartyCreated", "CommunicationPartyUpdated" };
+            eventName = message.ApplicationProperties["eventName"];
+            if (relevantEvents.Contains(eventName))
+            {
+                // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
+                herId = message.ApplicationProperties["herId"].ToString();
+                await Task.Delay(_randomGenerator.Next(50,5000)); // Add random sleep time to spread out the load on AddressRegistry when a new event comes
+                var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(int.Parse(herId!));
 
-            // Send the update to the health care system
-            _logger.LogInformation("Received {EventName} for HerId {HerId}", message.ApplicationProperties["eventName"], herId);
-            _healthCareSystem.CommunicationPartyUpdated(communicationParty);
+                // Send the update to the health care system
+                _logger.LogInformation("Received {EventName} for HerId {HerId}", eventName, herId);
+                _healthCareSystem.CommunicationPartyUpdated(communicationParty);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to process event {EventName} for HerId {HerId}. Ignoring, and moving to next message.", eventName, herId);
         }
     }
 
