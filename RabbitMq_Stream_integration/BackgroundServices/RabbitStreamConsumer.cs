@@ -21,7 +21,7 @@ public class RabbitStreamConsumer : BackgroundService
     private readonly InitialPopulationData _initialPopulation;
     
     private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(25);
-    private readonly Random rnd = new Random();
+    private readonly Random _randomGenerator = new();
     
     public RabbitStreamConsumer(IOptions<RegisterPlatformSettings> settings, ICommunicationPartyService communicationPartyService, StreamSystemConfig busStreamSystemConfig, IHealthCareSystem healthCareSystem, ILogger<RabbitStreamConsumer> logger, ILogger<Consumer> consumeLogger, InitialPopulationData initialPopulation)
     {
@@ -74,10 +74,10 @@ public class RabbitStreamConsumer : BackgroundService
             int messagesConsumed = 0;
             ulong trackedOffset = 0;
             
-            //Getting the offest from the a database or file.
+            //Getting the offset from the a database or file.
             try
             {
-                trackedOffset = await GetOffset();
+                trackedOffset = await LoadOffsetAsync();
             }
             catch (Exception e)
             {
@@ -90,23 +90,21 @@ public class RabbitStreamConsumer : BackgroundService
                 {
                     Reference = reference,
                     /*
-                    Consume the stream from the offest recived
+                    Consume the stream from the offset received
                     If the initial population job is started then we use timestamp to get the first message after the specified time.
                     Else we start with offset type first.
                     */
                     OffsetSpec = _initialPopulation.PerformInitialPopulation ? new OffsetTypeTimestamp((long)_initialPopulation.StartTime.Subtract(new DateTime(1970, 1, 1)).TotalSeconds) : new OffsetTypeOffset(trackedOffset),
                     // Receive the messages
-                    MessageHandler = async (sourceStream, consumer, ctx, message) =>
+                    MessageHandler = async (_, _, ctx, message) =>
                     {
                         //Storing offest after each 10 message is consumed.
                         if (++messagesConsumed % 10 == 0)
                         {
-                            // HERE: Implement function for storing the offset.
-                            _logger.LogInformation("Stored offset: {ctx.Offset}", ctx.Offset);
+                            await SaveOffsetAsync(ctx.Offset);
                         }
 
-                        await HandleMessage(sourceStream, message, messagesConsumed);
-                        await Task.CompletedTask;
+                        await HandleMessage(message);
                     }
                 }, _consumeLogger);
             
@@ -115,7 +113,7 @@ public class RabbitStreamConsumer : BackgroundService
             return true;
         } catch (Exception e)
         {
-            _logger.LogError(e, "Failed to set up connection to stream {_settings.QueueName} on RabbitMq. It may not have been created yet, will retry in a moment...", _settings.QueueName);
+            _logger.LogError(e, "Failed to set up connection to stream {QueueName} on RabbitMq. It may not have been created yet, will retry in a moment...", _settings.QueueName);
             await consumer?.Close()!;
             await system?.Close()!;
             return false;
@@ -126,35 +124,38 @@ public class RabbitStreamConsumer : BackgroundService
     /// <summary>
     /// Handle the incoming message.
     /// </summary>
-    /// <param name="sourceStream"></param>
-    /// <param name="message"></param>
-    private async Task HandleMessage(string sourceStream, Message message, int messagesConsumed)
+    private async Task HandleMessage(Message message)
     {
-        var props = message.ApplicationProperties;
         var relevantEvents = new[] { "CommunicationPartyCreated", "CommunicationPartyUpdated" };
-        if (relevantEvents.Contains(props["eventName"]))
+        if (relevantEvents.Contains(message.ApplicationProperties["eventName"]))
         {
             // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
+            var herId = message.ApplicationProperties["herId"].ToString();
             
-            var herId = props["herId"].ToString();
-            Console.WriteLine("Read message: " + messagesConsumed + ", with herId: " + herId);
-            
-            int mseconds = rnd.Next(50,5000);
-            await Task.Delay(mseconds); // Add random sleeptime to spread out load when a new event comes
-            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(Int32.Parse(herId!));
+            await Task.Delay(_randomGenerator.Next(50,5000)); // Add random sleep time to spread out the load on AddressRegistry when a new event comes
+            var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(int.Parse(herId!));
 
             // Send the update to the health care system
+            _logger.LogInformation("Received {EventName} for HerId {HerId}", message.ApplicationProperties["eventName"], herId);
             _healthCareSystem.CommunicationPartyUpdated(communicationParty);
         }
     }
 
-    private Task<ulong> GetOffset()
+    private Task<ulong> LoadOffsetAsync()
     {
-        //Implement you own solution for getting the offset from your storage.
+        //TODO: Implement your own solution for getting the offset from your storage.
         ulong offset = 9000;
+        _logger.LogInformation("Loaded offset from storage: {Offset}", offset);
         return Task.FromResult(offset);
     }
-    
+
+    private Task SaveOffsetAsync(ulong offset)
+    {
+        // TODO: Implement function for storing the offset.
+        _logger.LogInformation("Stored offset: {Offset}", offset);
+        return Task.CompletedTask;
+    }
+
     private void CloseChannel(StreamSystem system, Consumer consumer)
     {
         // Allow already received messages some time to process before we tear down the channel:

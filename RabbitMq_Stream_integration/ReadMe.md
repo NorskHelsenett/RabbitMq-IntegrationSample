@@ -10,7 +10,7 @@ The publish timestamp on the messages in the stream is set with `DateTime.UtcNow
 CommunicationPartyService is used to fetch data about the communicationParty when the consumer receives an event.
 
 ArExportService and CommunicationPartyService and RabbitMq requires an OrgUsr in RegisterPlattformen.  
-WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport) and [CommunicationPartyService](https://register-web.test.nhn.no/v1/AR)
+WSDL for [ArExportService](https://ws-web.test.nhn.no/v1/ARExport) and [CommunicationPartyService](https://ws-web.test.nhn.no/v1/AR)
 
 ### Initial population
 The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `--initpop`), and can then be left out.
@@ -37,7 +37,7 @@ Client for consuming streams. This client is work in progress.
 ### Offset tracking
 It is possible to use a different offset type then what we have in the example. We use OffsetTypeTimestamp if the init pop job is run, if not then we use OffsetTypeOffset.
 The stream client supports OffsetTypeFirst, OffsetTypeLast, OffsetTypeNext, OffsetTypeOffset and OffsetTypeTimestamp.
-Serverside Offset tracking is not supported as i requires writing access to the stream.
+Serverside Offset tracking is not supported as it requires writing access to the stream.
 You need to implement your own solution for storing the message offset when a message is consumed. 
 Our example shows you how to do it if you want to store after every 10. message.
 More information about the different [offset types](https://github.com/rabbitmq/rabbitmq-stream-dotnet-client#offset-types).
