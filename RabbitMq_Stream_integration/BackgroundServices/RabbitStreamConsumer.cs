@@ -136,6 +136,8 @@ public class RabbitStreamConsumer : BackgroundService
             {
                 // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
                 herId = message.ApplicationProperties["herId"].ToString();
+                
+                // Here you could add logic to only handle communication parties (herIds) that are relevant to your system, if your system does not need all communication parties.
                 await Task.Delay(_randomGenerator.Next(50,5000)); // Add random sleep time to spread out the load on AddressRegistry when a new event comes
                 var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(int.Parse(herId!));
 

@@ -145,6 +145,7 @@ public class AmqpQueueConsumer : BackgroundService
         {
             // A Communication Party has been created or updated, Fetch the latest version so we can send it to the health care system
             var herId = GetExpectedHeader<int>(eventArgs.BasicProperties.Headers, "herId");
+            // Here you could add logic to only handle communication parties (herIds) that are relevant to your system, if your system does not need all communication parties.
             var communicationParty = await _communicationPartyService.GetCommunicationPartyDetailsAsync(herId);
 
             // Send the update to the health care system

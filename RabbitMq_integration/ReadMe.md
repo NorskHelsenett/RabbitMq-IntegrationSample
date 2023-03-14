@@ -21,7 +21,7 @@ WSDL for
 * [ServiceBusManagerV2](https://ws-web.test.nhn.no/v2/servicebusmanager)
 
 ### Initial population
-The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `--initpop`), and can then be left out.
+The initial population job shows how you can do a first sync of communication parties. This only has to be done once (by supplying the command line flag `"initpop"`), and can then be left out.
 For convenience, two run profiles are included - one that runs the initial population and one that does not.
 
 ## Getting started:
@@ -29,7 +29,7 @@ For convenience, two run profiles are included - one that runs the initial popul
 * Fill out the OrgUsr Username and Password in the `appsettings.json`
 * Fill out SubscriptionIdentifier, this need to be unique for the user. If the user is used for multiple subscriptions then these need to have their own unique SubscriptionIdentifier 
 * Make sure BusHostname is correct and that the BusPort is `5671` and BusSslEnabled is `true`
-* Run the application `dotnet run`
+* Run the application `dotnet run` (or `dotnet run "initpop"` for initial run)
 
 ## RabbitMq
 ### Information about RabbitMq
